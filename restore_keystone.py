@@ -1,7 +1,10 @@
 import json
 import argparse
 import re
+import time
 import subprocess as sub
+from builtins import property, staticmethod, Exception
+
 from keystoneauth1.identity import v2
 from keystoneauth1 import session
 from keystoneclient.v2_0 import client
@@ -51,10 +54,14 @@ class KeystoneProject:
                 print("Failed to delete project {} due to Exception:{}".format(project['name'], exp)) 
                 
 class DatabaseSnapshot:
-    def __init__(self, db_file):
-        self.db_file = db_file
-        with open(self.db_file) as db_file:
-            self.json_db_str = db_file.read()
+    def __init__(self, db_snapshot_file_path):
+        """
+
+        :type db_snapshot_file_path: FileObject
+        """
+        self.db_snapshot_file_path = db_snapshot_file_path
+        with open(self.db_snapshot_file_path) as db_snapshot_file:
+            self.json_db_str = db_snapshot_file.read()
             self.json_db_dict = json.loads(self.json_db_str)
 
     def get_existing_projects(self):  #type: (Instance[DatabaseSnapshot]) -> Generator[Dict]
@@ -63,30 +70,31 @@ class DatabaseSnapshot:
             project_name, project_uuid = key.split(":")[1], key.split(":")[2]
             yield {'name': project_name, 'uuid': project_uuid}
 
-    def swap_project_uuids(self, projects_list): #type: (Instance[DatabaseSnapshot], List[Dict] -> None
-        '''
+    def swap_project_uuids(self, projects_list): #type: ([DatabaseSnapshot], List[Dict] -> Filehandle
+        """
         This method replaces the original uuids of the projects in the snapshot file with the uuids\
         from local Keystone server. The result is saved in the new file with ".changed" extension.
-        '''
-        global db_file
+        """
+        #global db_file
         print("Replacing UUIDs of the customer projects in the snapshot file with the new UUIDs from local \
               Keystone server\n")
         for project in projects_list:
             new_uuid = project['new_uuid']
-            new_uuid_dashed = '-'.join([new_uuid[0:8], new_uuid[8:12], new_uuid[12:16], new_uuid[16:20], \
+            new_uuid_dashed = '-'.join([new_uuid[0:8], new_uuid[8:12], new_uuid[12:16], new_uuid[16:20],
                                         new_uuid[20:32]])
             old_uuid_dashed = project['old_uuid']
             old_uuid = old_uuid_dashed.replace('-','')
             try:
-                self.json_db_str = db_file_read.replace(old_uuid, new_uuid)
-                self.json_db_str = db_file_read.replace(old_uuid_dashed, new_uuid_dashed)
+                self.json_db_str = self.json_db_str.replace(old_uuid, new_uuid)
+                self.json_db_str = self.json_db_str.replace(old_uuid_dashed, new_uuid_dashed)
             except Exception as exp:
-                print("Failed to replace UUID for project {}\n{}".format(project['name']), exp)
-            with open(db_file+".changed", "w") as new_db_file:
-                new_db_file.write(self.json_db_str)
-            return
+                print('Failed to replace UUID for project {}\n{}'.format(project['name']), exp)
+        changed_db_file = open("{}.changed".format(self.db_snapshot_file_path), "w")
+        changed_db_file.write(self.json_db_str)
+        changed_db_file.close()
+        return "{}.changed".format(self.db_snapshot_file_path)
 
-class DbJsonEximScript(object):
+class DbJsonEximScript:
     def __init__(self):
         self.LOADER_SCRIPT = "/usr/lib/python2.7/dist-packages/cfgm_common/db_json_exim.py"
 
@@ -107,21 +115,25 @@ class DbJsonEximScript(object):
         print("stopping Zookeeper service...\n")
         stop_zk = sub.Popen("service zookeeper stop", shell=True, stdout=sub.PIPE, stderr=sub.PIPE)
         if stop_zk.stderr.read():
-            raise "Unable to stop zookeeper services\n{}\n".format(stop_zk.stderr.read():)
-        print("Stopping Kafka service...\n")
+            raise "Unable to stop zookeeper services\n{}\n".format(stop_zk.stderr.read())
+        print('Stopping Kafka service...\n')
         stop_kafka = sub.Popen("service kafka stop", shell=True, stdout=sub.PIPE, stderr=sub.PIPE)
         if stop_kafka.stderr.read():
             raise "Unable to stop Kafka service\n{}\n".format(stop_kafka.stderr.read())
+        return
 
     @staticmethod
     def cleanup_zk_and_cassandra_data():
         print('Cleaning data directories of Zookeeper and Cassandra\n')
         cleanup_zk = sub.Popen('rm -rf /var/lib/zookeeper/version-2/*', shell=True, stdout=sub.PIPE, stderr=sub.PIPE)
+        time.sleep(2)
         if cleanup_zk.stderr.read():
             raise "Failed to delete Zookeeper data\n{}\n".format(cleanup_zk.stderr.read())
         cleanup_cassandra = sub.Popen('rm -rf /var/lib/cassandra/*', shell=True, stdout=sub.PIPE, stderr=sub.PIPE)
+        time.sleep(2)
         if cleanup_cassandra.stderr.read():
             raise "Failed to delete Cassandra DB\n{}\n".format(cleanup_cassandra.stderr.read())
+        return
 
     @staticmethod
     def start_zk_and_cassandra_services():
@@ -132,5 +144,12 @@ class DbJsonEximScript(object):
         start_cassandra = sub.Popen("service cassandra start", shell=True, stdout=sub.Popen, stderr=sub.PIPE)
         if start_cassandra.stderr.read():
             raise "Failed to start Cassandra service\n{}\n".format(start_cassandra.stderr.read())
+        time.sleep(25)
+        return
 
-    
+    @staticmethod
+    def run_db_exim_script():
+
+
+
+
