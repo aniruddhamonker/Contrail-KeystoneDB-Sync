@@ -1,3 +1,5 @@
+import os
+import sys
 import json
 import argparse
 import time
@@ -8,18 +10,16 @@ from keystoneauth1 import session
 from keystoneclient.v2_0 import client
 from keystoneauth1 import exceptions as _exc
 
-class KeystoneProject:
+class KeystoneProjects:
     def __init__(self, **kwargs):
         self.auth = v2.Password(username=kwargs.get('username', 'admin'), password=kwargs.get('password', 'Juniper'),
                                 tenant_name=kwargs.get('tenant_name', 'admin'), auth_url=kwargs.get('auth_url', None))
         self.sess = session.Session(auth=self.auth)
         self.keystone = client.Client(session=self.sess)
-        self.db_file = kwargs.get('db_file', db_file)
 
     def create_new_projects(self, project_names):
         """
-        This method takes in an instance of DatabaseSnapshot class as an argument.
-        db_snapshot here is an instance of DatabaseSnapshot.
+        This method creates new projects using the same project names from customer's db snapshot file.
         :param self: instance of class KeystoneProject
         :param project_names: List of Projects dictionary
         """
@@ -69,7 +69,7 @@ class DatabaseSnapshot:
             project_name, project_uuid = key.split(":")[1], key.split(":")[2]
             yield {'name': project_name, 'uuid': project_uuid}
 
-    def swap_project_uuids(self, projects_list): #type: ([DatabaseSnapshot], List[Dict] -> Str
+    def swap_project_uuids(self, projects_list):
         """
         This method replaces the original uuids of the projects in the snapshot file with the uuids\
         from local Keystone server. The result is saved in the new file with ".changed" extension.
@@ -77,9 +77,6 @@ class DatabaseSnapshot:
         :param: projects_list: List of Projects Dictionary
         :return: String: Path and filename of the updated file
         """
-        #global db_file
-        print("Replacing UUIDs of the customer projects in the snapshot file with the new UUIDs from local \
-              Keystone server\n")
         for project in projects_list:
             new_uuid = project['new_uuid']
             new_uuid_dashed = '-'.join([new_uuid[0:8], new_uuid[8:12], new_uuid[12:16], new_uuid[16:20],
@@ -99,6 +96,8 @@ class DatabaseSnapshot:
 class DbJsonEximScript:
     def __init__(self):
         self.LOADER_SCRIPT = "/usr/lib/python2.7/dist-packages/cfgm_common/db_json_exim.py"
+        if not os.path.isfile(self.LOADER_SCRIPT):
+            raise Exception("FileNotFound: Could not find db_json_exim.py script")
 
     @property
     def loader_script(self):
@@ -108,10 +107,11 @@ class DbJsonEximScript:
     def stop_contrail_services(*services):
         for service in services:
             print("Stopping {} service...\n".format(service))
-            stop_service = sub.Popen('service {} stop || true'.format(service), shell=True, stdout=sub.PIPE, \
-                                     stderr=sub.PIPE)
+            stop_service = sub.Popen('service {} stop'.format(service), shell=True, stderr=sub.PIPE,
+                                     stdout=sub.PIPE)
             if stop_service.stderr.read():
                 raise "Unable to stop {} process\n{}\n".format(service, stop_service.stderr.read())
+        time.sleep(10)
 
     @staticmethod
     def start_contrail_services(*services):
@@ -120,7 +120,7 @@ class DbJsonEximScript:
                                       stderr=sub.Popen)
             if start_service.stderr.read():
                 raise "Failed to start {} service\n{}\n".format(service, start_service.stderr.read())
-            time.sleep(20) if (service == 'cassandra') or (service == 'zookeeper') else time.sleep(5)
+            time.sleep(10)
         return
 
     @staticmethod
@@ -138,13 +138,15 @@ class DbJsonEximScript:
 
     def run_db_exim_script(self, db_file_path):
         """
-        This method runs the LOADER script "db_json_exim" and imports the database from the file supplied as an argument
+        This method runs the LOADER script "db_json_exim.py" and imports the database from the file supplied as an
+        argument.
         :param db_file_path: filename/path of Database snapshot file whose contents need to be imported into Cassandra
-        :return: None
+        :return: String
         """
         print("Running db_json_exim.py to import Database from file '{}'".format(db_file_path))
-        script = sub.Popen("python {} {}".format(self.LOADER_SCRIPT, db_file_path), shell=True, stdout=sub.PIPE,\
-                               stderr=sub.PIPE)
+        script = sub.Popen("python {} --import-from {}".format(self.LOADER_SCRIPT, db_file_path), shell=True,
+                           stdout=sub.PIPE, stderr=sub.PIPE)
+        time.sleep(15)
         if script.stderr.read():
             raise "DB Import Failed\n{}".format(script.stderr.read())
         else:
@@ -153,8 +155,61 @@ class DbJsonEximScript:
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("json_db_file", type=str, help="Path and filename of the JSON DB file")
+    parser.add_argument("-s", "--sync_projects", type=str, help="sync projects from DB file to local Keystone server")
+    parser.add_argument("-i", "--import-db", type=str, help="only import customer DB. Do not sync Keystone projects")
     args = parser.parse_args()
-    db_file_path = args.json_db_file
+
+    try:
+        openstack_creds = {
+            "username" : os.environ["OS_USERNAME"],
+            "password" : os.environ["OS_PASSWORD"],
+            "tenant_name" : os.environ["OS_TENANT_NAME"],
+            "auth_url" : os.environ["OS_AUTH_URL"]
+        }
+    except Exception as KeyErr:
+        print("KeyError {}: Import Openstack environment variables\n".format(KeyErr))
+        sys.exit(1)
+
+    keystone_projects = KeystoneProjects(**openstack_creds)
+    database_snapshot = DatabaseSnapshot(args.json_db_file)
+    db_script = DbJsonEximScript()
+
+    print("Creating new projects on local Keystone server\n")
+    customer_projects = [project for project in database_snapshot.get_existing_projects()]
+    new_projects = keystone_projects.create_new_projects(customer_projects)
+    print("Successfully created {} projects on local Keystone server\n".format(len(new_projects)))
+
+    print("Updating customer Database file with UUIDs of the projects from local Keystone server\n")
+    updated_json_db_file_path = database_snapshot.swap_project_uuids(new_projects)
+
+    print("Preparing to import updated database to Contrail\n")
+    print("Stopping contrail services\n")
+    db_script.stop_contrail_services("supervisor-config", "cassandra", "zookeeper", "kafka")
+    print("Erasing zookeeper and Cassandra data\n")
+    db_script.cleanup_zk_and_cassandra_data()
+    print("Starting zookeeper and cassandra services\n")
+    db_script.start_contrail_services("zookeeper", "cassandra")
+    print("Importing database to Contrail\n")
+    db_script.run_db_exim_script(updated_json_db_file_path)
+    print("start Kafka and Supervisor-config services\n")
+    db_script.start_contrail_services("kafka", "supervisor-config")
+    print("restarting Analytics Node\n")
+    db_script.stop_contrail_services("supervisor-analytics")
+    db_script.start_contrail_services("supervisor-analytics")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
