@@ -34,7 +34,8 @@ class KeystoneProjects:
                                                            .format(project['name']), enabled=True)
                 new_projects.append({'name': project['name'], 'old_uuid': project['uuid'], 'new_uuid': new_project.id})
             except Exception:
-                self.__logger.exception("Error when creating new Project {}\nInitiating Cleanup...".format(project['name']))
+                self.__logger.exception("Error when creating new Project {}\nInitiating Cleanup..."\
+                                        .format(project['name']))
                 self.delete_keystone_projects(new_projects)    #Perform Cleanup of the new projects created
                 raise
         return new_projects
@@ -155,8 +156,9 @@ class DbJsonEximScript:
 
     def run_db_exim_script(self, cls, db_file_path):
         """
-        This method stops necessary contrail services, cleans data directories of zookeeper and Cassandra, runs the LOADER script "db_json_exim.py" to import\
-        the database from the file provided as an argument; and finally restarts all the stopped services
+        This method stops necessary contrail services, cleans data directories of zookeeper and Cassandra,
+        runs the LOADER script "db_json_exim.py" to import the database from the file provided as an argument;
+        and finally restarts all the stopped services
         :param db_file_path: filename/path of Database snapshot file whose contents need to be imported into Cassandra
         :param cls: reference to Class
         :return: String
