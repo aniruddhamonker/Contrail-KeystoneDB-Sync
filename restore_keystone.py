@@ -210,7 +210,7 @@ class PythonLogger:
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("json_db_file", help="Path and filename of the JSON DB file")
+    parser.add_argument("db_file_path", help="Path and filename of the JSON DB file")
     parser.add_argument("-s", "--sync", nargs='+', help="Provide a list of customer project names\
                         to sync with Keystone server")
     parser.add_argument("-i", "--dbimport", help="Only import customer DB. Do not sync Keystone projects")
@@ -232,7 +232,7 @@ def main():
         sys.exit(1)
     #instantiate classes
     keystone_projects = KeystoneProjects(main_logger, **openstack_creds)
-    database_snapshot = DatabaseSnapshot(main_logger, args.json_db_file)
+    database_snapshot = DatabaseSnapshot(main_logger, args.db_file_path)
     db_script = DbJsonEximScript(DbJsonEximScript)
     if args.cleanup:
         main_logger.debug("Initiating deletes of Keystone Projects")
