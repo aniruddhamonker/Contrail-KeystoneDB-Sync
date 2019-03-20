@@ -4,13 +4,13 @@ import json
 import argparse
 import time
 import subprocess as sub
-from builtins import property, Exception, classmethod, len, open
+#from builtins import property, Exception, classmethod, len, open
 import logging
 from keystoneauth1.identity import v2
 from keystoneauth1 import session
 from keystoneclient.v2_0 import client
 from keystoneauth1 import exceptions as _exc
-from typing import Any
+#from typing import Any
 
 
 class KeystoneProjects:
@@ -106,7 +106,7 @@ class DatabaseSnapshot:
         return "{}.changed".format(self.db_snapshot_file_path)
 
 class DbJsonEximScript:
-    __logger = logging.getLogger(name=__class__.__name__)
+    __logger = logging.getLogger(name="DbJsonEximScript")
     def __init__(self, cls):
         self.LOADER_SCRIPT = "/usr/lib/python2.7/dist-packages/cfgm_common/db_json_exim.py"
         if not os.path.isfile(self.LOADER_SCRIPT):
@@ -210,7 +210,7 @@ class PythonLogger:
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("json_db_file", required=True, help="Path and filename of the JSON DB file")
+    parser.add_argument("json_db_file", help="Path and filename of the JSON DB file")
     parser.add_argument("-s", "--sync", nargs='+', help="provide a list of customer project names\
                         to sync with Keystone server")
     parser.add_argument("-i", "--dbimport", help="only import customer DB. Do not sync Keystone projects")
@@ -254,7 +254,8 @@ def main():
     #import the updated database file in Contrail using db_json_exim.py script
     db_script.run_db_exim_script(updated_json_db_file_path, args.verbosity)
 
-
+if __name__ == '__main__':
+    main()
 
 
 
