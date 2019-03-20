@@ -211,9 +211,10 @@ class PythonLogger:
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("json_db_file", help="Path and filename of the JSON DB file")
-    parser.add_argument("-s", "--sync", nargs='+', help="provide a list of customer project names\
+    parser.add_argument("-s", "--sync", nargs='+', help="Provide a list of customer project names\
                         to sync with Keystone server")
-    parser.add_argument("-i", "--dbimport", help="only import customer DB. Do not sync Keystone projects")
+    parser.add_argument("-i", "--dbimport", help="Only import customer DB. Do not sync Keystone projects")
+    parser.add_argument("-c", "--cleanup", help="Delete Keystone projects that were created from customer DB file")
     parser.add_argument("-d", "--debug", help="increase output verbosity")
     args = parser.parse_args()
     #create logger under main() and use the same logger across all instantiated objects
