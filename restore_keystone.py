@@ -10,8 +10,6 @@ from keystoneauth1.identity import v2
 from keystoneauth1 import session
 from keystoneclient.v2_0 import client
 from keystoneauth1 import exceptions as _exc
-#from typing import Any
-
 
 class KeystoneProjects:
     def __init__(self, logger, **kwargs):
@@ -28,7 +26,11 @@ class KeystoneProjects:
         :param project_names: List of Projects dictionary
         """
         new_projects = []
+        existing_projects = [existing_project.name for existing_project in self.keystone.tenants.list()]
         for project in project_names:
+            if project['name'] in existing_projects:
+                self.__logger.debug("Project {} already exist in Keystone. Skipping...".format(project['name']))
+                continue
             try:
                 new_project = self.keystone.tenants.create(tenant_name=project['name'], description="ProjectInfo:{}"
                                                            .format(project['name']), enabled=True)
@@ -49,6 +51,8 @@ class KeystoneProjects:
         """
         project_uuid = 'uuid' if cleanup else 'new_uuid'  # type:String
         for project in projects_list:
+        #Making exception case for admin and demo projects which are default in Openstack and Contrail
+
             try:
                 self.keystone.tenants.delete(project[project_uuid])
                 self.__logger.debug("successfully deleted project {}".format(project['name']))
