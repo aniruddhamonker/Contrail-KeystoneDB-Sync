@@ -199,7 +199,7 @@ class PythonLogger:
         self.logger.setLevel(log_level)
         fh = logging.FileHandler("/var/log/contrail/KeystoneDB_sync.log")
         console_handler = logging.StreamHandler()
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)')
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         fh.setFormatter(formatter)
         console_handler.setFormatter(formatter)
         self.logger.addHandler(fh)
@@ -228,7 +228,7 @@ def main():
             "auth_url" : os.environ["OS_AUTH_URL"]
         }
     except Exception as KeyErr:
-        main_logger.exception("KeyError {}: Import Openstack environment variables\n".format(KeyErr))
+        main_logger.exception("KeyError: Import Openstack environment variables")
         sys.exit(1)
     #instantiate classes
     keystone_projects = KeystoneProjects(main_logger, **openstack_creds)
