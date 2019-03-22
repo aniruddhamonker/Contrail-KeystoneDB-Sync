@@ -49,10 +49,11 @@ class KeystoneProjects:
         :param cleanup: set to True if this method is to be used for cleanup option of the script
         :return: None
         """
-        project_uuid = 'uuid' if cleanup else 'new_uuid'  # type:String
+        project_uuid = 'uuid' if cleanup else 'new_uuid'
         for project in projects_list:
-        #Making exception case for admin and demo projects which are default in Openstack and Contrail
-
+        #Making exception case for default projects in Openstack and Contrail
+            if project['name'] in list("admin", "demo", "service", "invisible_to_admin"):
+                continue
             try:
                 self.keystone.tenants.delete(project[project_uuid])
                 self.__logger.debug("successfully deleted project {}".format(project['name']))
