@@ -52,13 +52,13 @@ class KeystoneProjects:
         project_uuid = 'uuid' if cleanup else 'new_uuid'
         for project in projects_list:
         #Making exception case for default projects in Openstack and Contrail
-            if project['name'] in list("admin", "demo", "service", "invisible_to_admin"):
+            if project['name'] in ["admin", "demo", "service", "invisible_to_admin"]:
                 continue
             try:
                 self.keystone.tenants.delete(project[project_uuid])
                 self.__logger.debug("successfully deleted project {}".format(project['name']))
             except _exc.NotFound:
-                self.__logger.exception("project {} not found in Keystone Database".format(project['name']))
+                self.__logger.debug("project {} not found in Keystone Database".format(project['name']))
             except Exception:
                 self.__logger.exception("Failed to delete project {}".format(project['name']))
         return
@@ -216,11 +216,11 @@ class PythonLogger:
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("db_file_path", help="Path and filename of the JSON DB file")
-    parser.add_argument("--sync", nargs='+', help="Provide a list of customer project names\
+    parser.add_argument("-s", "--sync", nargs='+', help="Provide a list of customer project names\
                         to sync with Keystone server")
-    parser.add_argument("--dbimport", help="Only import customer DB. Do not sync Keystone projects")
-    parser.add_argument("--cleanup", help="Delete Keystone projects that were created from customer DB file")
-    parser.add_argument("--debug", help="increase output verbosity")
+    parser.add_argument("-i", "--dbimport", action='store_true', help="Only import customer DB. Do not sync Keystone projects")
+    parser.add_argument("-c", "--cleanup", action='store_true', help="Delete Keystone projects that were created from customer DB file")
+    parser.add_argument("-d", "--debug", action='store_true', help="increase output verbosity")
     args = parser.parse_args()
     #create logger under main() and use the same logger across all instantiated objects
     main_logger = PythonLogger(logging.DEBUG).get_logger() if args.debug else PythonLogger().get_logger()
@@ -243,7 +243,7 @@ def main():
         main_logger.debug("Initiating deletes of Keystone Projects")
         cleanup_projects = [project for project in database_snapshot.get_existing_projects()]
         keystone_projects.delete_keystone_projects(cleanup_projects, cleanup=True)
-
+        return
     if args.dbimport:
         db_script.run_db_exim_script(DbJsonEximScript, args.json_db_file)
         return
