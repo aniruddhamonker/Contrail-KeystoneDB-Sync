@@ -136,8 +136,8 @@ class DbJsonEximScript:
     @classmethod
     def _start_contrail_services(cls, *services):
         for service in services:
-            start_service = sub.Popen("service {} start".format(service), shell=True, stdout=sub.Popen,
-                                      stderr=sub.Popen)
+            start_service = sub.Popen("service {} start".format(service), shell=True, stdout=sub.PIPE,
+                                      stderr=sub.PIPE)
             if start_service.stderr.read():
                 cls.__logger.exception("Failed to start {} service\n{}\n".format(service, start_service.stderr.read()))
                 raise Exception("Error Starting Service")
@@ -245,7 +245,7 @@ def main():
         keystone_projects.delete_keystone_projects(cleanup_projects, cleanup=True)
         return
     if args.dbimport:
-        db_script.run_db_exim_script(DbJsonEximScript, args.json_db_file)
+        db_script.run_db_exim_script(DbJsonEximScript, args.db_file_path)
         return
     if args.sync:
         customer_projects = [{'name': project} for project in args.sync]
