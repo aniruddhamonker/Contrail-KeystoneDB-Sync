@@ -10,6 +10,8 @@ from keystoneauth1.identity import v2
 from keystoneauth1 import session
 from keystoneclient.v2_0 import client
 from keystoneauth1 import exceptions as _exc
+from typing import Any
+
 
 class KeystoneProjects:
     def __init__(self, logger, **kwargs):
@@ -111,55 +113,52 @@ class DatabaseSnapshot:
         return "{}.changed".format(self.db_snapshot_file_path)
 
 class DbJsonEximScript:
-    __logger = logging.getLogger(name="DbJsonEximScript")
-    def __init__(self, cls):
+    def __init__(self, logger):
+        self.__logger = logger
         self.LOADER_SCRIPT = "/usr/lib/python2.7/dist-packages/cfgm_common/db_json_exim.py"
         if not os.path.isfile(self.LOADER_SCRIPT):
-            cls.__logger.error("FileNotFound: Could not find db_json_exim.py script")
+            self.__logger.error("FileNotFound: Could not find db_json_exim.py script")
             raise Exception
 
     @property
     def loader_script(self):
         return self.LOADER_SCRIPT
 
-    @classmethod
-    def _stop_contrail_services(cls, *services):
+    def _stop_contrail_services(self, *services):
         for service in services:
-            cls.__logger.debug("Stopping {} service...\n".format(service))
+            self.__logger.debug("Stopping {} service...\n".format(service))
             stop_service = sub.Popen('service {} stop'.format(service), shell=True, stderr=sub.PIPE,
                                      stdout=sub.PIPE)
             if stop_service.stderr.read():
-                cls.__logger.exception("Unable to stop {} process\n{}\n".format(service, stop_service.stderr.read()))
+                self.__logger.exception("Unable to stop {} process\n{}\n".format(service, stop_service.stderr.read()))
                 raise Exception("Error Stopping Service")
         time.sleep(10)
 
-    @classmethod
-    def _start_contrail_services(cls, *services):
+    def _start_contrail_services(self, *services):
         for service in services:
             start_service = sub.Popen("service {} start".format(service), shell=True, stdout=sub.PIPE,
                                       stderr=sub.PIPE)
             if start_service.stderr.read():
-                cls.__logger.exception("Failed to start {} service\n{}\n".format(service, start_service.stderr.read()))
+                self.__logger.exception("Failed to start {} service\n{}\n".format(service, start_service.stderr.read()))
                 raise Exception("Error Starting Service")
             time.sleep(10)
         return
 
-    @classmethod
-    def _cleanup_zk_and_cassandra_data(cls):
-        cls.__logger.debug('Cleaning data directories of Zookeeper and Cassandra\n')
+    def _cleanup_zk_and_cassandra_data(self):
+        self.__logger.debug('Cleaning data directories of Zookeeper and Cassandra\n')
         cleanup_zk = sub.Popen('rm -rf /var/lib/zookeeper/version-2/*', shell=True, stdout=sub.PIPE, stderr=sub.PIPE)
         time.sleep(2)
         if cleanup_zk.stderr.read():
-            cls.__logger.exception("Failed to delete Zookeeper data\n{}\n".format(cleanup_zk.stderr.read()))
+            self.__logger.exception("Failed to delete Zookeeper data\n{}\n".format(cleanup_zk.stderr.read()))
             raise Exception("ZkCleanupFailed")
         cleanup_cassandra = sub.Popen('rm -rf /var/lib/cassandra/*', shell=True, stdout=sub.PIPE, stderr=sub.PIPE)
         time.sleep(2)
         if cleanup_cassandra.stderr.read():
-            cls.__logger.exception("Failed to delete Cassandra DB\n{}\n".format(cleanup_cassandra.stderr.read()))
+            self.__logger.exception("Failed to delete Cassandra DB\n{}\n".format(cleanup_cassandra.stderr.read()))
             raise Exception("CassandraCleanupFailed")
         return
 
-    def run_db_exim_script(self, cls, db_file_path):
+    def run_db_exim_script(self, db_file_path):
         """
         This method stops necessary contrail services, cleans data directories of zookeeper and Cassandra,
         runs the LOADER script "db_json_exim.py" to import the database from the file provided as an argument;
@@ -168,32 +167,32 @@ class DbJsonEximScript:
         :param cls: reference to Class
         :return: String
         """
-        cls.__logger.debug("Preparing to import database to Contrail")
-        cls.__logger.debug("Stopping contrail services")
+        self.__logger.debug("Preparing to import database to Contrail")
+        self.__logger.debug("Stopping contrail services")
         self._stop_contrail_services("supervisor-config", "cassandra", "zookeeper", "kafka")
 
-        cls.__logger.debug("Erasing zookeeper and Cassandra data")
+        self.__logger.debug("Erasing zookeeper and Cassandra data")
         self._cleanup_zk_and_cassandra_data()
 
-        cls.__logger.debug("Starting zookeeper and cassandra services")
+        self.__logger.debug("Starting zookeeper and cassandra services")
         self._start_contrail_services("zookeeper", "cassandra")
 
-        cls.__logger.debug("Importing database to Contrail")
-        cls.__logger.debug("Running db_json_exim.py to import Database from file '{}'".format(db_file_path))
+        self.__logger.debug("Importing database to Contrail")
+        self.__logger.debug("Running db_json_exim.py to import Database from file '{}'".format(db_file_path))
         script = sub.Popen("python {} --import-from {}".format(self.LOADER_SCRIPT, db_file_path), shell=True,
                            stdout=sub.PIPE, stderr=sub.PIPE)
         if script.stderr.read():
-            cls.__logger.error("DB Import Failed\n{}".format(script.stderr.read()))
+            self.__logger.error("DB Import Failed\n{}".format(script.stderr.read()))
             raise Exception("DBImportFailure")
         else:
-            cls.__logger.debug(script.stdout.read())
+            self.__logger.debug(script.stdout.read())
         time.sleep(5)
-        cls.__logger.debug("Database import Successful\n")
+        self.__logger.debug("Database import Successful\n")
 
-        cls.__logger.debug("start Kafka and Supervisor-config services\n")
+        self.__logger.debug("start Kafka and Supervisor-config services\n")
         self._start_contrail_services("kafka", "supervisor-config")
 
-        cls.__logger.debug("restarting Analytics Node\n")
+        self.__logger.debug("restarting Analytics Node\n")
         self._stop_contrail_services("supervisor-analytics")
         self._start_contrail_services("supervisor-analytics")
         return
@@ -232,20 +231,20 @@ def main():
             "tenant_name" : os.environ["OS_TENANT_NAME"],
             "auth_url" : os.environ["OS_AUTH_URL"]
         }
-    except Exception as KeyErr:
+    except Exception:
         main_logger.exception("KeyError: Import Openstack environment variables")
         sys.exit(1)
     #instantiate classes
     keystone_projects = KeystoneProjects(main_logger, **openstack_creds)
     database_snapshot = DatabaseSnapshot(main_logger, args.db_file_path)
-    db_script = DbJsonEximScript(DbJsonEximScript)
+    db_script = DbJsonEximScript(main_logger)
     if args.cleanup:
         main_logger.debug("Initiating deletes of Keystone Projects")
         cleanup_projects = [project for project in database_snapshot.get_existing_projects()]
         keystone_projects.delete_keystone_projects(cleanup_projects, cleanup=True)
         return
     if args.dbimport:
-        db_script.run_db_exim_script(DbJsonEximScript, args.db_file_path)
+        db_script.run_db_exim_script(args.db_file_path)
         return
     if args.sync:
         customer_projects = [{'name': project} for project in args.sync]
@@ -258,7 +257,7 @@ def main():
     main_logger.debug("Updating customer Database file with UUIDs of the projects from local Keystone server")
     updated_json_db_file_path = database_snapshot.swap_project_uuids(new_projects)
     #import the updated database file in Contrail using db_json_exim.py script
-    db_script.run_db_exim_script(updated_json_db_file_path, args.verbosity)
+    db_script.run_db_exim_script(updated_json_db_file_path)
 
 if __name__ == '__main__':
     main()
