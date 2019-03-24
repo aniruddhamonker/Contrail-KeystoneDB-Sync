@@ -129,19 +129,24 @@ class DbJsonEximScript:
             self.__logger.debug("Stopping {} service...\n".format(service))
             stop_service = sub.Popen('service {} stop'.format(service), shell=True, stderr=sub.PIPE,
                                      stdout=sub.PIPE)
-            if stop_service.stderr.read():
-                self.__logger.exception("Unable to stop {} process\n{}\n".format(service, stop_service.stderr.read()))
+            time.sleep(5)
+            service_status = sub.Popen('service {} status'.format(service), shell=True, stderr=sub.PIPE,
+                                       stdout=sub.PIPE)
+            if 'not' or 'stop' in service_status.stdout.read().lower():
+                continue
+            else:
+                self.__logger.error("Unable to stop {} process\n{}\n".format(service, stop_service.stderr.read()))
                 raise Exception("Error Stopping Service")
-        time.sleep(10)
 
     def _start_contrail_services(self, *services):
         for service in services:
             start_service = sub.Popen("service {} start".format(service), shell=True, stdout=sub.PIPE,
                                       stderr=sub.PIPE)
-            if start_service.stderr.read():
-                self.__logger.exception("Failed to start {} service\n{}\n".format(service, start_service.stderr.read()))
+            service_status = sub.Popen('service {} status'.format(service), shell=True, stderr=sub.PIPE,
+                                       stdout=sub.PIPE)
+            if 'not' or 'stop' in service_status.stdout.read().lower():
+                self.__logger.error("Failed to start {} service\n{}\n".format(service, start_service.stderr.read()))
                 raise Exception("Error Starting Service")
-            time.sleep(10)
         return
 
     def _cleanup_zk_and_cassandra_data(self):
