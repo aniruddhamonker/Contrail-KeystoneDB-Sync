@@ -35,6 +35,7 @@ class KeystoneProjects:
             try:
                 new_project = self.keystone.tenants.create(tenant_name=project['name'], description="ProjectInfo:{}"
                                                            .format(project['name']), enabled=True)
+                self.__logger.debug("Project {} created successfully".format(project['name']))
                 new_projects.append({'name': project['name'], 'old_uuid': project['uuid'], 'new_uuid': new_project.id})
             except Exception:
                 self.__logger.exception("Error when creating new Project {}\nInitiating Cleanup..."\
@@ -130,22 +131,22 @@ class DbJsonEximScript:
                                      stdout=sub.PIPE)
             time.sleep(10)
             service_status = sub.Popen('service {} status'.format(service), shell=True, stderr=sub.PIPE,
-                                       stdout=sub.PIPE)
-            if ('not' or 'stop') in service_status.stdout.read().lower():
+                                       stdout=sub.PIPE).stdout.read().lower()
+            if 'not' in service_status or 'stop' in service_status:
                 continue
             else:
-                self.__logger.error("Unable to stop {} process\n{}\n".format(service, stop_service.stderr.read()))
+                self.__logger.error("Unable to stop {} process\n{}".format(service, stop_service.stderr.read()))
                 raise Exception("Error Stopping Service")
 
     def _start_contrail_services(self, *services):
         for service in services:
-            import pdb; pdb.set_trace()
+            self.__logger.debug("Starting {} service...".format(service))
             start_service = sub.Popen("service {} start".format(service), shell=True, stdout=sub.PIPE,
                                       stderr=sub.PIPE)
             time.sleep(15)
             service_status = sub.Popen('service {} status'.format(service), shell=True, stderr=sub.PIPE,
-                                       stdout=sub.PIPE)
-            if ('not' or 'stop') in service_status.stdout.read().lower():
+                                       stdout=sub.PIPE).stdout.read().lower()
+            if 'not' in service_status or 'stop' in service_status:
                 self.__logger.error("Failed to start {} service\n{}\n".format(service, start_service.stderr.read()))
                 raise Exception("Error Starting Service")
         return
