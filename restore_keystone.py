@@ -10,7 +10,6 @@ from keystoneauth1.identity import v2
 from keystoneauth1 import session
 from keystoneclient.v2_0 import client
 from keystoneauth1 import exceptions as _exc
-from typing import Any
 
 
 class KeystoneProjects:
@@ -129,10 +128,10 @@ class DbJsonEximScript:
             self.__logger.debug("Stopping {} service...\n".format(service))
             stop_service = sub.Popen('service {} stop'.format(service), shell=True, stderr=sub.PIPE,
                                      stdout=sub.PIPE)
-            time.sleep(5)
+            time.sleep(10)
             service_status = sub.Popen('service {} status'.format(service), shell=True, stderr=sub.PIPE,
                                        stdout=sub.PIPE)
-            if 'not' or 'stop' in service_status.stdout.read().lower():
+            if ('not' or 'stop') in service_status.stdout.read().lower():
                 continue
             else:
                 self.__logger.error("Unable to stop {} process\n{}\n".format(service, stop_service.stderr.read()))
@@ -140,11 +139,13 @@ class DbJsonEximScript:
 
     def _start_contrail_services(self, *services):
         for service in services:
+            import pdb; pdb.set_trace()
             start_service = sub.Popen("service {} start".format(service), shell=True, stdout=sub.PIPE,
                                       stderr=sub.PIPE)
+            time.sleep(15)
             service_status = sub.Popen('service {} status'.format(service), shell=True, stderr=sub.PIPE,
                                        stdout=sub.PIPE)
-            if 'not' or 'stop' in service_status.stdout.read().lower():
+            if ('not' or 'stop') in service_status.stdout.read().lower():
                 self.__logger.error("Failed to start {} service\n{}\n".format(service, start_service.stderr.read()))
                 raise Exception("Error Starting Service")
         return
