@@ -4,13 +4,13 @@ import json
 import argparse
 import time
 import subprocess as sub
-#from builtins import property, Exception, classmethod, len, open
 import logging
 from logging.handlers import RotatingFileHandler
 from keystoneauth1.identity import v2
 from keystoneauth1 import session
 from keystoneclient.v2_0 import client
 from keystoneauth1 import exceptions as _exc
+from typing import Any
 
 
 class KeystoneProjects:
@@ -45,21 +45,21 @@ class KeystoneProjects:
                 raise
         return new_projects
 
-    def delete_keystone_projects(self, projects_list, cleanup=False):
+    def delete_keystone_projects(self, projects_list):
         """
         This method to be used to cleanup/delete the projects that were created from database snapshot file
         :param projects_list: List of projects(Dict) to delete
         :param cleanup: set to True if this method is to be used for cleanup option of the script
         :return: None
         """
-        project_uuid = 'uuid' if cleanup else 'new_uuid'
+        #get uuid of the projects from Keystone server
+        keystone_projects = {project.name: project.id for project in self.keystone.tenants.list()}
         for project in projects_list:
         #Making exception case for default projects in Openstack and Contrail
             if project['name'] in ["admin", "demo", "service", "invisible_to_admin"]:
                 continue
             try:
-                import pdb; pdb.set_trace()
-                self.keystone.tenants.delete(project[project_uuid])
+                self.keystone.tenants.delete(keystone_projects.get(project['name']))
                 self.__logger.debug("successfully deleted project {}".format(project['name']))
             except _exc.NotFound:
                 self.__logger.debug("project {} not found in Keystone Database".format(project['name']))
@@ -226,8 +226,10 @@ def main():
     parser.add_argument("db_file_path", help="Path and filename of the JSON DB file")
     parser.add_argument("-s", "--sync", nargs='+', help="Provide a list of customer project names\
                         to sync with Keystone server")
-    parser.add_argument("-i", "--dbimport", action='store_true', help="Only import customer DB. Do not sync Keystone projects")
-    parser.add_argument("-c", "--cleanup", action='store_true', help="Delete Keystone projects that were created from customer DB file")
+    parser.add_argument("-i", "--dbimport", action='store_true', help="Only import customer DB.\
+                        Do not sync Keystone projects")
+    parser.add_argument("-c", "--cleanup", action='store_true', help="Delete Keystone projects that \
+                        were created from customer DB file")
     parser.add_argument("-d", "--debug", action='store_true', help="increase output verbosity")
     args = parser.parse_args()
     #create logger under main() and use the same logger across all instantiated objects
@@ -249,8 +251,8 @@ def main():
     db_script = DbJsonEximScript(main_logger)
     if args.cleanup:
         main_logger.debug("Initiating deletes of Keystone Projects")
-        cleanup_projects = [project for project in database_snapshot.get_existing_projects()]
-        keystone_projects.delete_keystone_projects(cleanup_projects, cleanup=True)
+        cleanup_projects = [project for project in database_snapshot.get_existing_projects()]  # type: List(Dict)
+        keystone_projects.delete_keystone_projects(cleanup_projects)
         return
     if args.dbimport:
         db_script.run_db_exim_script(args.db_file_path)
