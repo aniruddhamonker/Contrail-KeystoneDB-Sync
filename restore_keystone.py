@@ -6,6 +6,7 @@ import time
 import subprocess as sub
 #from builtins import property, Exception, classmethod, len, open
 import logging
+from logging.handlers import RotatingFileHandler
 from keystoneauth1.identity import v2
 from keystoneauth1 import session
 from keystoneclient.v2_0 import client
@@ -57,6 +58,7 @@ class KeystoneProjects:
             if project['name'] in ["admin", "demo", "service", "invisible_to_admin"]:
                 continue
             try:
+                import pdb; pdb.set_trace()
                 self.keystone.tenants.delete(project[project_uuid])
                 self.__logger.debug("successfully deleted project {}".format(project['name']))
             except _exc.NotFound:
@@ -208,7 +210,7 @@ class PythonLogger:
     def __init__(self, log_level=logging.INFO):
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(log_level)
-        fh = logging.FileHandler("/var/log/contrail/KeystoneDB_sync.log")
+        fh = RotatingFileHandler("/var/log/contrail/KeystoneDB_sync.log", maxBytes=100000, backupCount=5)
         console_handler = logging.StreamHandler()
         formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
         fh.setFormatter(formatter)
