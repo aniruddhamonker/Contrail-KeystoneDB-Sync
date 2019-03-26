@@ -10,7 +10,6 @@ from keystoneauth1.identity import v2
 from keystoneauth1 import session
 from keystoneclient.v2_0 import client
 from keystoneauth1 import exceptions as _exc
-from typing import Any
 
 
 class KeystoneProjects:
