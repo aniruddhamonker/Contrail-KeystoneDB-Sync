@@ -211,7 +211,7 @@ class PythonLogger:
         self.logger.setLevel(log_level)
         fh = RotatingFileHandler("/var/log/contrail/sync_keystone.log", maxBytes=100000, backupCount=5)
         console_handler = logging.StreamHandler()
-        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        formatter = logging.Formatter('%(asctime)s - %(filename)s - %(levelname)s - %(message)s')
         fh.setFormatter(formatter)
         console_handler.setFormatter(formatter)
         self.logger.addHandler(fh)
