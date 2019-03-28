@@ -223,7 +223,7 @@ class PythonLogger:
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("db_file_path", help="Path and filename of the JSON DB file")
-    parser.add_argument("-s", "--sync", nargs='+', help="Provide a list of customer project names\
+    parser.add_argument("-s", "--sync", type=list, nargs='+', help="Provide a list of customer project names\
                         to sync with Keystone server")
     parser.add_argument("-i", "--dbimport", action='store_true', help="Only import customer DB.\
                         Do not sync Keystone projects")
