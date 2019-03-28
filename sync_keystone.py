@@ -127,7 +127,7 @@ class DbJsonEximScript:
 
     def _stop_contrail_services(self, *services):
         for service in services:
-            self.__logger.debug("Stopping {} service...\n".format(service))
+            self.__logger.debug("Stopping {} service".format(service))
             stop_service = sub.Popen('service {} stop'.format(service), shell=True, stderr=sub.PIPE,
                                      stdout=sub.PIPE)
             time.sleep(10)
@@ -136,33 +136,33 @@ class DbJsonEximScript:
             if 'not' in service_status or 'stop' in service_status:
                 continue
             else:
-                self.__logger.error("Unable to stop {} process\n{}".format(service, stop_service.stderr.read()))
+                self.__logger.error("Unable to stop {} service\n{}".format(service, stop_service.stderr.read()))
                 raise Exception("Error Stopping Service")
 
     def _start_contrail_services(self, *services):
         for service in services:
-            self.__logger.debug("Starting {} service...".format(service))
+            self.__logger.debug("Starting {} service".format(service))
             start_service = sub.Popen("service {} start".format(service), shell=True, stdout=sub.PIPE,
                                       stderr=sub.PIPE)
             time.sleep(15)
             service_status = sub.Popen('service {} status'.format(service), shell=True, stderr=sub.PIPE,
                                        stdout=sub.PIPE).stdout.read().lower()
             if 'not' in service_status or 'stop' in service_status:
-                self.__logger.error("Failed to start {} service\n{}\n".format(service, start_service.stderr.read()))
+                self.__logger.error("Failed to start {} service\n{}".format(service, start_service.stderr.read()))
                 raise Exception("Error Starting Service")
         return
 
     def _cleanup_zk_and_cassandra_data(self):
-        self.__logger.debug('Cleaning data directories of Zookeeper and Cassandra\n')
+        self.__logger.debug('Cleaning data directories of Zookeeper and Cassandra')
         cleanup_zk = sub.Popen('rm -rf /var/lib/zookeeper/version-2/*', shell=True, stdout=sub.PIPE, stderr=sub.PIPE)
         time.sleep(2)
         if cleanup_zk.stderr.read():
-            self.__logger.exception("Failed to delete Zookeeper data\n{}\n".format(cleanup_zk.stderr.read()))
+            self.__logger.exception("Failed to delete Zookeeper data\n{}".format(cleanup_zk.stderr.read()))
             raise Exception("ZkCleanupFailed")
         cleanup_cassandra = sub.Popen('rm -rf /var/lib/cassandra/*', shell=True, stdout=sub.PIPE, stderr=sub.PIPE)
         time.sleep(2)
         if cleanup_cassandra.stderr.read():
-            self.__logger.exception("Failed to delete Cassandra DB\n{}\n".format(cleanup_cassandra.stderr.read()))
+            self.__logger.exception("Failed to delete Cassandra DB\n{}".format(cleanup_cassandra.stderr.read()))
             raise Exception("CassandraCleanupFailed")
         return
 
@@ -195,12 +195,12 @@ class DbJsonEximScript:
         else:
             self.__logger.debug(script.stdout.read())
         time.sleep(5)
-        self.__logger.debug("Database import Successful\n")
+        self.__logger.debug("Database import Successful")
 
-        self.__logger.debug("start Kafka and Supervisor-config services\n")
+        self.__logger.debug("start Kafka and Supervisor-config services")
         self._start_contrail_services("kafka", "supervisor-config")
 
-        self.__logger.debug("restarting Analytics Node\n")
+        self.__logger.debug("restarting Analytics Node")
         self._stop_contrail_services("supervisor-analytics")
         self._start_contrail_services("supervisor-analytics")
         return
