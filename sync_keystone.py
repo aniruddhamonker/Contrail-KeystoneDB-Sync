@@ -257,7 +257,9 @@ def main():
         db_script.run_db_exim_script(args.db_file_path)
         return
     if args.sync:
-        customer_projects = [{'name': project} for project in args.sync]
+        customer_projects = [{'name': project['name'], 'uuid': project['uuid']} \
+                             for project in database_snapshot.get_existing_projects()\
+                             for project_name in args.sync if project_name == project['name']]
     else:
         customer_projects = [project for project in database_snapshot.get_existing_projects()]
     main_logger.debug("Creating new projects on local Keystone server")
