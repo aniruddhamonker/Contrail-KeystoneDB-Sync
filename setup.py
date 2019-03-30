@@ -19,6 +19,9 @@ setuptools.setup(
         "Operating System :: Ubuntu14.04",
     ],
 	install_requires=[
-        'keystoneauth1',
-    ]
+        'keystoneauth1'
+    ],
+    entry_points = {
+        'console_scripts': ['sync-keystone=sync_keystone:main']
+    }
 )
