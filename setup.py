@@ -22,6 +22,6 @@ setuptools.setup(
         'keystoneauth1'
     ],
     entry_points = {
-        'console_scripts': ['sync-keystone=sync_keystone:main']
+        'console_scripts': ['sync-keystone=dbsync-keystone.dbsync-keystone:main']
     }
 )
