@@ -192,8 +192,6 @@ class DbJsonEximScript:
         if script.stderr.read():
             self.__logger.error("DB Import Failed\n{}".format(script.stderr.read()))
             raise Exception("DBImportFailure")
-        else:
-            self.__logger.debug(script.stdout.read())
         time.sleep(5)
         self.__logger.debug("Database import Successful")
 
