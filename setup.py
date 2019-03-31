@@ -9,6 +9,7 @@ setuptools.setup(
     author="Aniruddh Amonker",
     author_email="aamonker@juniper.net",
     description="Tool to sync Keystone projects from contrail's database snapshot file",
+    py_modules=['dbsync-keystone'],
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/aniruddhamonker/Contrail-KeystoneDB-Sync.git",
