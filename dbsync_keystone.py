@@ -240,7 +240,7 @@ def main():
             "auth_url" : os.environ["OS_AUTH_URL"]
         }
     except Exception:
-        main_logger.exception("KeyError: Import Openstack environment variables")
+        main_logger.error("KeyError: Import Openstack environment variables")
         sys.exit(1)
     #instantiate classes
     keystone_projects = KeystoneProjects(main_logger, **openstack_creds)
