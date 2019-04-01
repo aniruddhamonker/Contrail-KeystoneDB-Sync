@@ -5,7 +5,10 @@ Primary use for troubleshooting scenarios in Contrail when attempting to reprodu
 ## Pre-requisites
 Before installation please ensure you have "pip" and "git" installed on your system
 
-
+## Installation
+```
+$pip install git+https://github.com/aniruddhamonker/Contrail-KeystoneDB-Sync.git
+```
 
 ## Running the script
 ### Help
@@ -29,4 +32,5 @@ optional arguments:
 ```
 
 ### Debug
-Running with --debug flag will print debug level messages on the terminal session as well in the log file.
+Running with --debug flag will print debug level messages on the terminal session as well as in the log file.
+The default location of the log file is "/var/log/contrail/dbsync-keystone.log"
