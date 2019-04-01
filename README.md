@@ -62,6 +62,6 @@ This option only creates keystone projects specified as input arguments. The pro
 ```
 $dbsync-keystone --debug --sync 'Project-name-1' 'Project-name-2' 'Project-name-3' -- <location-of-db-snapshot-file>
 ```
-
+Please note "--" in the above command used to mark end of project names
 
 
