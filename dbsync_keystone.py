@@ -207,7 +207,7 @@ class PythonLogger:
     def __init__(self, log_level=logging.INFO):
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(log_level)
-        fh = RotatingFileHandler("/var/log/contrail/sync_keystone.log", maxBytes=100000, backupCount=5)
+        fh = RotatingFileHandler("/var/log/contrail/dbsync-keystone.log", maxBytes=100000, backupCount=5)
         console_handler = logging.StreamHandler()
         formatter = logging.Formatter('%(asctime)s - %(filename)s - %(levelname)s - %(message)s')
         fh.setFormatter(formatter)
