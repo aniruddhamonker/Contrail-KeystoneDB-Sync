@@ -1,4 +1,4 @@
-# Keystone DB Sync from Contrail DB Snapshot
+# Keystone projects sync from Contrail DB Snapshot
 Tool to sync Keystone projects from contrail's database snapshot file.
 Primary use for troubleshooting scenarios in Contrail when attempting to reproduce customer issues in the lab
 
