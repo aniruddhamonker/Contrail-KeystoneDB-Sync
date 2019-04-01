@@ -2,6 +2,11 @@
 Tool to sync Keystone projects from contrail's database snapshot file.
 Primary use for troubleshooting scenarios in Contrail when attempting to reproduce customer issues in the lab
 
+## Pre-requisites
+Before installation please ensure you have "pip" and "git" installed on your system
+
+
+
 ## Running the script
 ### Help
 ```
