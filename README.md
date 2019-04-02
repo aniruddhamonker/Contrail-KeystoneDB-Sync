@@ -64,4 +64,7 @@ $dbsync-keystone --debug --sync 'Project-name-1' 'Project-name-2' 'Project-name-
 ```
 Please note "--" in the above command used to mark end of project names
 
-
+# TO-DOs
++ Support DB imports for HA setups
++ Run within Config container in Contrail 5.x setups
++ Take DB snapshots of current state before importing another Contrail DB
