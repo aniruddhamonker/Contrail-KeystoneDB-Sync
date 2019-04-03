@@ -5,6 +5,9 @@ Primary use for troubleshooting scenarios in Contrail when attempting to reprodu
 ## Pre-requisites
 Before installation please ensure you have "pip" and "git" installed on your system
 
+## Dependencies
+keystoneauth1
+
 ## Installation
 ```
 $pip install git+https://github.com/aniruddhamonker/Contrail-KeystoneDB-Sync.git
