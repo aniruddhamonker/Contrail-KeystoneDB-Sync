@@ -13,7 +13,7 @@ keystoneauth1
 $pip install git+https://github.com/aniruddhamonker/Contrail-KeystoneDB-Sync.git
 ```
 
-## Running the script
+## Usage
 ### Help
 ```
 $python sync_keystone.py --help
