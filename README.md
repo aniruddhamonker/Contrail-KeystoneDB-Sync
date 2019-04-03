@@ -16,22 +16,22 @@ $pip install git+https://github.com/aniruddhamonker/Contrail-KeystoneDB-Sync.git
 ## Usage
 ### Help
 ```
-$python sync_keystone.py --help
-
-usage: sync_keystone.py [-h] [-s SYNC [SYNC ...]] [-i] [-c] [-d] db_file_path
+$dbsync-keystone --help
+usage: dbsync-keystone [-h] [-s [SYNC [SYNC ...]]] [-i] [-c] [-d] db_file_path
 
 positional arguments:
   db_file_path          Path and filename of the JSON DB file
 
 optional arguments:
   -h, --help            show this help message and exit
-  -s SYNC [SYNC ...], --sync SYNC [SYNC ...]
+  -s [SYNC [SYNC ...]], --sync [SYNC [SYNC ...]]
                         Provide a list of customer project names to sync with
                         Keystone server
   -i, --dbimport        Only import customer DB. Do not sync Keystone projects
   -c, --cleanup         Delete Keystone projects that were created from
                         customer DB file
   -d, --debug           increase output verbosity
+
 ```
 
 ### Debug
