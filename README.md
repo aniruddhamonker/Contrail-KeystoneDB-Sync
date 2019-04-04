@@ -57,7 +57,7 @@ $dbsync-keystone --debug --dbimport <location-of-db-snapshot-file>
 ## Cleanup
 This option deletes the keystone projects on local server that were created from contrail DB snapshot file
 ```
-$ dbsync-keystone --debug --cleanup ~/zchg1accnt02.json
+$ dbsync-keystone --debug --cleanup <location-of-db-snapshot-file>
 ```
 
 ## Sync
