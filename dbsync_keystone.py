@@ -11,6 +11,10 @@ from keystoneauth1 import session
 from keystoneclient.v2_0 import client
 from keystoneauth1 import exceptions as _exc
 
+"""
+Testing Git Branching
+"""
+
 
 class KeystoneProjects:
     def __init__(self, logger, **kwargs):
@@ -38,9 +42,9 @@ class KeystoneProjects:
                 self.__logger.debug("Project {} created successfully".format(project['name']))
                 new_projects.append({'name': project['name'], 'old_uuid': project['uuid'], 'new_uuid': new_project.id})
             except Exception:
-                self.__logger.exception("Error when creating new Project {}\nInitiating Cleanup..."\
+                self.__logger.exception("Error when creating new Project {}\nInitiating Cleanup..."
                                         .format(project['name']))
-                self.delete_keystone_projects(new_projects)    #Perform Cleanup of the new projects created
+                self.delete_keystone_projects(new_projects)  # Perform Cleanup of the new projects created
                 raise
         return new_projects
 
@@ -48,13 +52,12 @@ class KeystoneProjects:
         """
         This method to be used to cleanup/delete the projects that were created from database snapshot file
         :param projects_list: List of projects(Dict) to delete
-        :param cleanup: set to True if this method is to be used for cleanup option of the script
         :return: None
         """
-        #get uuid of the projects from Keystone server
+        # get uuid of the projects from Keystone server
         keystone_projects = {project.name: project.id for project in self.keystone.tenants.list()}
         for project in projects_list:
-        #Making exception case for default projects in Openstack and Contrail
+            # Making exception case for default projects in Openstack and Contrail
             if project['name'] in ["admin", "demo", "service", "invisible_to_admin"]:
                 continue
             try:
@@ -65,6 +68,7 @@ class KeystoneProjects:
             except Exception:
                 self.__logger.exception("Failed to delete project {}".format(project['name']))
         return
+
 
 class DatabaseSnapshot:
     def __init__(self, logger, db_snapshot_file_path):
@@ -101,7 +105,7 @@ class DatabaseSnapshot:
             new_uuid_dashed = '-'.join([new_uuid[0:8], new_uuid[8:12], new_uuid[12:16], new_uuid[16:20],
                                         new_uuid[20:32]])
             old_uuid_dashed = project['old_uuid']
-            old_uuid = old_uuid_dashed.replace('-','')
+            old_uuid = old_uuid_dashed.replace('-', '')
             self.__logger.debug("Replacing UUID for project: {}".format(project['name']))
             try:
                 self.json_db_str = self.json_db_str.replace(old_uuid, new_uuid)
@@ -112,6 +116,7 @@ class DatabaseSnapshot:
         changed_db_file.write(self.json_db_str)
         changed_db_file.close()
         return "{}.changed".format(self.db_snapshot_file_path)
+
 
 class DbJsonEximScript:
     def __init__(self, logger):
@@ -172,7 +177,6 @@ class DbJsonEximScript:
         runs the LOADER script "db_json_exim.py" to import the database from the file provided as an argument;
         and finally restarts all the stopped services
         :param db_file_path: filename/path of Database snapshot file whose contents need to be imported into Cassandra
-        :param cls: reference to Class
         :return: String
         """
         self.__logger.debug("Preparing to import database to Contrail")
@@ -203,6 +207,7 @@ class DbJsonEximScript:
         self._start_contrail_services("supervisor-analytics")
         return
 
+
 class PythonLogger:
     def __init__(self, log_level=logging.INFO):
         self.logger = logging.getLogger(__name__)
@@ -218,10 +223,11 @@ class PythonLogger:
     def get_logger(self):
         return self.logger
 
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("db_file_path", help="Path and filename of the JSON DB file")
-    parser.add_argument("-s","--sync", type=str, nargs='*', help="Provide a list of customer project names\
+    parser.add_argument("-s", "--sync", type=str, nargs='*', help="Provide a list of customer project names\
                         to sync with Keystone server")
     parser.add_argument("-i", "--dbimport", action='store_true', help="Only import customer DB.\
                         Do not sync Keystone projects")
@@ -229,71 +235,46 @@ def main():
                         were created from customer DB file")
     parser.add_argument("-d", "--debug", action='store_true', help="increase output verbosity")
     args = parser.parse_args()
-    #create logger under main() and use the same logger across all instantiated objects
+    # create logger under main() and use the same logger across all instantiated objects
     main_logger = PythonLogger(logging.DEBUG).get_logger() if args.debug else PythonLogger().get_logger()
-    #test for sourcing openstack environment
+    # test for sourcing openstack environment
     try:
         openstack_creds = {
-            "username" : os.environ["OS_USERNAME"],
-            "password" : os.environ["OS_PASSWORD"],
-            "tenant_name" : os.environ["OS_TENANT_NAME"],
-            "auth_url" : os.environ["OS_AUTH_URL"]
+            "username": os.environ["OS_USERNAME"],
+            "password": os.environ["OS_PASSWORD"],
+            "tenant_name": os.environ["OS_TENANT_NAME"],
+            "auth_url": os.environ["OS_AUTH_URL"]
         }
     except Exception:
         main_logger.error("KeyError: Import Openstack environment variables")
         sys.exit(1)
-    #instantiate classes
+    # instantiate classes
     keystone_projects = KeystoneProjects(main_logger, **openstack_creds)
     database_snapshot = DatabaseSnapshot(main_logger, args.db_file_path)
     db_script = DbJsonEximScript(main_logger)
     if args.cleanup:
         main_logger.debug("Initiating deletes of Keystone Projects")
-        cleanup_projects = [project for project in database_snapshot.get_existing_projects()]  # type: List(Dict)
+        cleanup_projects = [project for project in database_snapshot.get_existing_projects()]
         keystone_projects.delete_keystone_projects(cleanup_projects)
         return
     if args.dbimport:
         db_script.run_db_exim_script(args.db_file_path)
         return
     if args.sync:
-        customer_projects = [{'name': project['name'], 'uuid': project['uuid']} \
-                             for project in database_snapshot.get_existing_projects()\
+        customer_projects = [{'name': project['name'], 'uuid': project['uuid']}
+                             for project in database_snapshot.get_existing_projects()
                              for project_name in args.sync if project_name == project['name']]
     else:
         customer_projects = [project for project in database_snapshot.get_existing_projects()]
     main_logger.debug("Creating new projects on local Keystone server")
     new_projects = keystone_projects.create_new_projects(customer_projects)
     main_logger.debug("Successfully created {} projects on local Keystone server".format(len(new_projects)))
-    #update customer database file with new project UUIDs from local Keystone server
+    # update customer database file with new project UUIDs from local Keystone server
     main_logger.debug("Updating customer Database file with UUIDs of the projects from local Keystone server")
     updated_json_db_file_path = database_snapshot.swap_project_uuids(new_projects)
-    #import the updated database file in Contrail using db_json_exim.py script
+    # import the updated database file in Contrail using db_json_exim.py script
     db_script.run_db_exim_script(updated_json_db_file_path)
+
 
 if __name__ == '__main__':
     main()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
