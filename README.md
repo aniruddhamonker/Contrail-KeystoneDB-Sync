@@ -1,6 +1,7 @@
 # Keystone projects sync from Contrail DB Snapshot
 Tool to sync Keystone projects from contrail's database snapshot file.
 Primary use for troubleshooting scenarios in Contrail when attempting to reproduce customer issues in the lab
+This tool currently supports Contrail 3.2.x releases 3.2.10 and later and should be run on single node setups(non-HA)
 
 ## Pre-requisites
 Before installation please ensure you have "pip" and "git" installed on your system
